@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: radial-gradient(circle at top left, rgba(92, 225, 230, 0.08), transparent 45%),
+    radial-gradient(circle at 80% 10%, rgba(77, 93, 251, 0.12), transparent 50%), #0c1231;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui;
+}
+
+.prose a {
+  color: #5ce1e6;
+}

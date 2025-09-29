@@ -1,0 +1,9 @@
+node_modules
+.dist
+dist
+.astro
+.env
+coverage
+playwright-report
+.DS_Store
+npm-debug.log*

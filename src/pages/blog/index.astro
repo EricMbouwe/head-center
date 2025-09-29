@@ -1,0 +1,37 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+const posts = (await getCollection('blog')).filter((post) => !post.data.draft).sort((a, b) => (a.data.publishedAt < b.data.publishedAt ? 1 : -1));
+---
+
+<BaseLayout title="Head Center — Blog" description="Articles sur le développement web moderne, le DevOps et la stratégie produit.">
+  <section class="mx-auto max-w-5xl px-6 py-24 sm:px-12">
+    <div class="mb-16 text-center">
+      <p class="text-sm font-semibold uppercase tracking-[0.3em] text-cyanAura">Blog</p>
+      <h1 class="mt-4 text-4xl font-heading text-white">Inspiration et retours d’expérience</h1>
+      <p class="mt-4 text-base text-slate-300">
+        Un condensé des meilleures pratiques en Astro, React, Supabase, AWS et DevOps pour bâtir des produits performants.
+      </p>
+    </div>
+    <div class="grid gap-8">
+      {posts.map((post) => (
+        <article class="rounded-3xl border border-white/5 bg-white/5 p-10 shadow-card">
+          <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
+            <span class="rounded-full bg-indigoGlow/20 px-3 py-1">{post.data.category}</span>
+            <span class="rounded-full bg-white/10 px-3 py-1 text-white">{new Date(post.data.publishedAt).toLocaleDateString('fr-FR')}</span>
+          </div>
+          <h2 class="mt-5 text-3xl font-heading text-white">
+            <a class="hover:text-cyanAura" href={`/blog/${post.slug}`}>{post.data.title}</a>
+          </h2>
+          <p class="mt-4 text-base text-slate-300">{post.data.description}</p>
+          <div class="mt-6 flex flex-wrap gap-2 text-xs text-slate-300">
+            {post.data.tags?.map((tag) => (
+              <span class="rounded-full border border-white/10 px-3 py-1">#{tag}</span>
+            ))}
+          </div>
+        </article>
+      ))}
+    </div>
+  </section>
+</BaseLayout>

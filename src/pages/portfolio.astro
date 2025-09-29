@@ -1,0 +1,47 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Head Center — Portfolio" description="Découvrez nos études de cas et projets marquants.">
+  <section class="mx-auto max-w-6xl px-6 py-24 sm:px-12">
+    <div class="mb-12 text-center">
+      <p class="text-sm font-semibold uppercase tracking-[0.3em] text-cyanAura">Portfolio</p>
+      <h1 class="mt-4 text-4xl font-heading text-white">Une sélection de projets impactants</h1>
+      <p class="mt-4 text-base text-slate-300">
+        Chaque collaboration est guidée par une obsession : délivrer rapidement un produit performant et mesurable.
+      </p>
+    </div>
+    <div class="space-y-8">
+      <article class="rounded-3xl border border-white/5 bg-white/5 p-10 shadow-card">
+        <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
+          <span class="rounded-full bg-indigoGlow/20 px-3 py-1">SaaS</span>
+          <span class="rounded-full bg-white/10 px-3 py-1 text-white">Astro</span>
+          <span class="rounded-full bg-white/10 px-3 py-1 text-white">Supabase</span>
+        </div>
+        <h2 class="mt-5 text-3xl font-heading text-white">NeoFit</h2>
+        <p class="mt-4 text-base text-slate-300">
+          Refonte totale de l’expérience produit, transition vers Astro/React, intégration d’un back-office Supabase et déploiement automatisé sur AWS.
+        </p>
+        <div class="mt-6 flex flex-wrap gap-4 text-sm">
+          <a class="text-indigoGlow hover:text-cyanAura" href="https://docs.example.com/neofit" target="_blank">Documentation</a>
+          <a class="text-indigoGlow hover:text-cyanAura" href="https://demo.example.com/neofit" target="_blank">Env. de test</a>
+        </div>
+      </article>
+      <article class="rounded-3xl border border-white/5 bg-white/5 p-10 shadow-card">
+        <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
+          <span class="rounded-full bg-indigoGlow/20 px-3 py-1">Fintech</span>
+          <span class="rounded-full bg-white/10 px-3 py-1 text-white">Kubernetes</span>
+          <span class="rounded-full bg-white/10 px-3 py-1 text-white">Terraform</span>
+        </div>
+        <h2 class="mt-5 text-3xl font-heading text-white">OrbitPay</h2>
+        <p class="mt-4 text-base text-slate-300">
+          Mise en place d’une architecture micro-frontend, pipelines GitHub Actions multi-environnements et observabilité complète (Prometheus + Grafana).
+        </p>
+        <div class="mt-6 flex flex-wrap gap-4 text-sm">
+          <a class="text-indigoGlow hover:text-cyanAura" href="https://docs.example.com/orbitpay" target="_blank">Documentation</a>
+          <a class="text-indigoGlow hover:text-cyanAura" href="https://demo.example.com/orbitpay" target="_blank">Env. de test</a>
+        </div>
+      </article>
+    </div>
+  </section>
+</BaseLayout>
