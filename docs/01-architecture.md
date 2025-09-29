@@ -10,6 +10,8 @@
 ├── src
 │   ├── components
 │   │   ├── Hero.tsx
+│   │   ├── blog
+│   │   │   └── BlogView.tsx
 │   │   └── admin
 │   │       └── AdminApp.tsx
 │   ├── layouts
@@ -22,9 +24,11 @@
 │   │   │   └── [slug].astro
 │   │   └── admin
 │   │       └── index.astro
-│   └── content
-│       └── blog
-│           └── *.md
+│   ├── content
+│   │   └── blog
+│   │       └── *.md
+│   └── store
+│       └── blogStore.ts
 ├── public
 ├── tests
 ├── terraform
@@ -35,6 +39,10 @@
 - **Markdown** : contenu marketing et blog versionné.
 - **Supabase** : table `posts` et stockage des assets (covers). Auth Google pour l’équipe.
 - **Supabase Edge Functions** : (à créer) pour synchroniser Markdown ⇆ Postgres si besoin.
+
+## Gestion d'état côté client
+- **Zustand** : magasin léger `useBlogStore` pour centraliser la recherche, les filtres par catégorie/tag et préparer les futures
+  interactions multi-pages sans basculer vers un framework plus lourd.
 
 ## Sécurité
 - Auth Supabase + RLS (Row-Level Security).
