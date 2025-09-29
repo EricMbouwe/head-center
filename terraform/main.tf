@@ -12,7 +12,7 @@ terraform {
   }
   backend "s3" {
     bucket = var.state_bucket
-    key    = "head-center/terraform.tfstate"
+    key    = "head-center/${var.state_key_suffix}"
     region = var.region
   }
 }
@@ -63,11 +63,19 @@ resource "aws_ecr_repository" "head_center" {
   }
 }
 
+locals {
+  requested_environments = length(var.deploy_environments) > 0 ? var.deploy_environments : keys(var.environments)
+  environments = { for env, cfg in var.environments : env => cfg if contains(local.requested_environments, env) }
+}
+
 module "app" {
   source = "./modules/app"
+  for_each = local.environments
 
-  namespace          = var.kubernetes_namespace
-  image_uri          = "${aws_ecr_repository.head_center.repository_url}:latest"
-  supabase_url       = var.supabase_url
-  supabase_anon_key = var.supabase_anon_key
+  namespace    = each.value.namespace
+  environment  = each.key
+  image_uri    = "${aws_ecr_repository.head_center.repository_url}:${each.value.image_tag}"
+  replicas     = lookup(each.value, "replicas", 2)
+  supabase_url = var.supabase_credentials[each.key].url
+  supabase_anon_key = var.supabase_credentials[each.key].anon_key
 }

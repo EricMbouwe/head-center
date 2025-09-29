@@ -40,3 +40,8 @@
 - Auth Supabase + RLS (Row-Level Security).
 - Secrets injectés via Kubernetes `Secret` (cf. module Terraform).
 - CI/CD protège la branche principale via tests + review obligatoire.
+
+## Environnements
+- **Staging** : namespace Kubernetes `web-staging`, image ECR taggée `staging`, réplicas minimaux pour valider les features.
+- **Production** : namespace `web-prod`, image taggée `production`, autoscaling géré côté cluster (réplicas initiaux configurables via Terraform).
+- **Promotion** : release tag `v*` déclenche le push de l'image production et l'exécution de `deploy.sh production` pour appliquer les manifests dédiés.

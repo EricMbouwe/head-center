@@ -35,9 +35,11 @@ jobs:
           name: dist
           path: dist
 
-  docker:
+  docker-staging:
     needs: build-test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - name: Set up QEMU
@@ -46,17 +48,45 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
-      - name: Build and push image
+      - name: Build and push staging image
         id: build_push
         uses: docker/build-push-action@v5
         with:
           context: .
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ secrets.AWS_ECR_REGISTRY }}/head-center:latest
+          push: true
+          tags: ${{ secrets.AWS_ECR_REGISTRY }}/head-center:staging
       - name: Export image digest
         run: echo '${{ steps.build_push.outputs.digest }}' > image-digest.txt
       - name: Upload image digest
         uses: actions/upload-artifact@v4
         with:
-          name: image-digest
+          name: staging-image-digest
+          path: image-digest.txt
+
+  docker-production:
+    needs: build-test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push production image
+        id: build_push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ secrets.AWS_ECR_REGISTRY }}/head-center:production
+      - name: Export image digest
+        run: echo '${{ steps.build_push.outputs.digest }}' > image-digest.txt
+      - name: Upload image digest
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-image-digest
           path: image-digest.txt

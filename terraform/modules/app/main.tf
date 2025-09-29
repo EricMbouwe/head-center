@@ -1,10 +1,18 @@
 variable "namespace" {
-  type    = string
-  default = "web"
+  type = string
+}
+
+variable "environment" {
+  type = string
 }
 
 variable "image_uri" {
   type = string
+}
+
+variable "replicas" {
+  type    = number
+  default = 2
 }
 
 variable "supabase_url" {
@@ -12,13 +20,17 @@ variable "supabase_url" {
 }
 
 variable "supabase_anon_key" {
-  type = string
+  type      = string
   sensitive = true
 }
 
 resource "kubernetes_namespace" "app" {
   metadata {
     name = var.namespace
+    labels = {
+      environment = var.environment
+      app          = "head-center"
+    }
   }
 }
 
@@ -40,11 +52,12 @@ resource "kubernetes_deployment" "app" {
     namespace = var.namespace
     labels = {
       app = "head-center"
+      env = var.environment
     }
   }
 
   spec {
-    replicas = 2
+    replicas = var.replicas
 
     selector {
       match_labels = {
@@ -88,6 +101,11 @@ resource "kubernetes_deployment" "app" {
             }
           }
 
+          env {
+            name  = "APP_ENVIRONMENT"
+            value = var.environment
+          }
+
           resources {
             limits = {
               cpu    = "500m"
@@ -125,11 +143,19 @@ resource "kubernetes_service" "app" {
     }
 
     port {
-      name       = "http"
-      port       = 80
+      name        = "http"
+      port        = 80
       target_port = 4321
     }
 
     type = "LoadBalancer"
   }
+}
+
+output "namespace" {
+  value = kubernetes_namespace.app.metadata[0].name
+}
+
+output "service_name" {
+  value = kubernetes_service.app.metadata[0].name
 }

@@ -10,6 +10,7 @@
 2. Définir les variables d’environnement :
    - `PUBLIC_SUPABASE_URL`
    - `PUBLIC_SUPABASE_ANON_KEY`
+   - Prévoir deux jeux de clefs (staging & production) et les renseigner dans `terraform/*.tfvars` pour que chaque namespace Kubernetes injecte les bonnes valeurs.
 3. Créer la table `posts` :
 ```sql
 create table posts (

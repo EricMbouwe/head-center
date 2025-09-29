@@ -39,13 +39,27 @@ docker run -p 4321:4321 head-center
 
 ## CI/CD
 - Workflow GitHub Actions : `.github/workflows/ci.yml`.
+- Pipelines différenciées :
+  - `docker-staging` se déclenche sur `main` et publie l'image `:staging`.
+  - `docker-production` se déclenche sur un tag `v*` et publie l'image `:production`.
 - Secrets requis : `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `AWS_ECR_REGISTRY`.
 
 ## Infrastructure
 1. Configurer un bucket S3 pour l’état Terraform.
-2. `terraform init -backend-config="bucket=..."`
-3. `terraform apply -var='supabase_url=...' -var='supabase_anon_key=...'`
-4. `infra/scripts/deploy.sh` pour automatiser la mise en prod.
+2. Copier `terraform/terraform.tfvars.example` vers `terraform/staging.tfvars` et `terraform/production.tfvars` en renseignant vos URLs/clefs Supabase et, si besoin, un `state_key_suffix` distinct.
+3. Initialiser l'état : `terraform init` (le backend S3 est déjà défini via variables `state_bucket` et `state_key_suffix`).
+4. Déployer en staging :
+   ```bash
+   infra/scripts/deploy.sh staging terraform/staging.tfvars
+   ```
+5. Promouvoir en production :
+   ```bash
+   infra/scripts/deploy.sh production terraform/production.tfvars
+   ```
+6. Pour déployer simultanément toutes les stacks (en fournissant un unique fichier `.tfvars` qui contient les deux environnements) :
+   ```bash
+   infra/scripts/deploy.sh all terraform/terraform.tfvars
+   ```
 
 ## Observabilité
 - Monitoring stack installée via `k8s/monitoring-stack.yaml` (kube-prometheus-stack + ELK).

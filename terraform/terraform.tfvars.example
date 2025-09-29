@@ -1,0 +1,17 @@
+region              = "eu-west-3"
+state_bucket        = "my-terraform-state-bucket"
+state_key_suffix    = "shared.tfstate"
+
+# Optionnel : décommentez pour cibler uniquement certains environnements
+# deploy_environments = ["staging"]
+
+supabase_credentials = {
+  staging = {
+    url      = "https://your-staging-supabase.supabase.co"
+    anon_key = "STAGING_SUPABASE_ANON_KEY"
+  }
+  production = {
+    url      = "https://your-production-supabase.supabase.co"
+    anon_key = "PRODUCTION_SUPABASE_ANON_KEY"
+  }
+}

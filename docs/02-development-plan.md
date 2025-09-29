@@ -16,16 +16,16 @@ Chaque étape est précédée d’une explication claire du **pourquoi** et du *
    - *Comment ?* Écrire les tests unitaires (Hero), d’intégration (collection blog) puis E2E (Playwright) avant d’implémenter les features.
 5. **CI/CD GitHub Actions**
    - *Pourquoi ?* Garantir la qualité et l’automatisation du build.
-   - *Comment ?* Configurer les secrets GitHub (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `AWS_ACCESS_KEY_ID`, etc.), exécuter le workflow `ci.yml`.
+   - *Comment ?* Configurer les secrets GitHub (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `AWS_ACCESS_KEY_ID`, etc.), exécuter le workflow `ci.yml` : le job `docker-staging` publie l’image `:staging` à chaque merge sur `main`, `docker-production` ne tourne que sur un tag `v*`.
 6. **Containerisation & Publication ECR**
    - *Pourquoi ?* Standardiser l’exécution et préparer Kubernetes.
-   - *Comment ?* Builder l’image via GitHub Actions et la pousser sur ECR.
+   - *Comment ?* Builder l’image via GitHub Actions et la pousser sur ECR (tags `staging` et `production` gérés par la CI).
 7. **Provisioning AWS via Terraform**
    - *Pourquoi ?* Automatiser VPC, EKS, ECR, DNS.
-   - *Comment ?* `terraform init`, `terraform apply` avec variables `state_bucket`, `supabase_url`, `supabase_anon_key`.
+   - *Comment ?* Définir les credentials Supabase par environnement (`terraform/staging.tfvars`, `terraform/production.tfvars`), exécuter `infra/scripts/deploy.sh staging ...` puis `infra/scripts/deploy.sh production ...`.
 8. **Déploiement Kubernetes**
-   - *Pourquoi ?* Orchestrer l’application en production.
-   - *Comment ?* `kubectl apply -f k8s/monitoring-stack.yaml`, Terraform module `app` applique le déploiement.
+   - *Pourquoi ?* Orchestrer l’application en staging puis production.
+   - *Comment ?* Terraform module `app` applique `Deployment` + `Service` dans les namespaces `web-staging` et `web-prod`, `kubectl apply -f k8s/monitoring-stack.yaml` installe l’observabilité commune.
 9. **Observabilité**
    - *Pourquoi ?* Suivre les performances et anticiper les incidents.
    - *Comment ?* Installer kube-prometheus-stack, Grafana, Elastic/Filebeat; configurer les dashboards et alertes (cf. `docs/07-observability.md`).
