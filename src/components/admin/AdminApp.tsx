@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QueryProvider from '../providers/QueryProvider';
+import PostForm, { type PostFormValues, type PostStatus } from './PostForm';
 
 type Post = {
   id: string;
   title: string;
   description: string;
   slug: string;
-  published_at: string;
-  status: 'draft' | 'published';
+  content: string;
+  published_at: string | null;
+  status: PostStatus;
+  read_count: number;
+  cover_image: string | null;
+  gallery_images: string[];
+  video_url: string | null;
+  created_at?: string;
+  updated_at?: string;
 };
 
 type Session = {
@@ -19,6 +27,7 @@ type Session = {
 };
 
 const supabase = createClient(import.meta.env.PUBLIC_SUPABASE_URL, import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+const MEDIA_BUCKET = 'post-media';
 
 function useSession() {
   const [session, setSession] = useState<Session | null>(null);
@@ -34,83 +43,436 @@ function useSession() {
   return session;
 }
 
-async function fetchPosts() {
-  const { data, error } = await supabase.from('posts').select('*').order('published_at', { ascending: false });
+async function fetchPosts(): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .order('updated_at', { ascending: false });
   if (error) throw error;
-  return data as Post[];
+  return (data ?? []).map((post) => ({
+    ...post,
+    read_count: post.read_count ?? 0,
+    gallery_images: post.gallery_images ?? []
+  })) as Post[];
+}
+
+const statusLabels: Record<PostStatus, string> = {
+  draft: 'Brouillon',
+  in_review: 'En revue',
+  published: 'Publié'
+};
+
+const statusColors: Record<PostStatus, string> = {
+  draft: 'bg-slate-700/60 text-slate-200',
+  in_review: 'bg-amber-500/10 text-amber-300',
+  published: 'bg-emerald-500/10 text-emerald-300'
+};
+
+const filterOptions: { value: PostStatus | 'all'; label: string }[] = [
+  { value: 'all', label: 'Tous' },
+  { value: 'draft', label: 'Brouillons' },
+  { value: 'in_review', label: 'En revue' },
+  { value: 'published', label: 'Publiés' }
+];
+
+function statusBadge(status: PostStatus) {
+  return (
+    <span className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusColors[status]}`}>
+      {statusLabels[status]}
+    </span>
+  );
+}
+
+async function createPost(values: PostFormValues) {
+  const payload = {
+    title: values.title,
+    slug: values.slug,
+    description: values.description,
+    content: values.content,
+    status: values.status,
+    cover_image: values.cover_image,
+    gallery_images: values.gallery_images,
+    video_url: values.video_url,
+    published_at: values.status === 'published' ? values.published_at ?? new Date().toISOString() : null
+  };
+  const { data, error } = await supabase.from('posts').insert(payload).select('*').single();
+  if (error) throw error;
+  return data as Post;
+}
+
+async function updatePost(id: string, values: Partial<Post>) {
+  const { data, error } = await supabase.from('posts').update(values).eq('id', id).select('*').single();
+  if (error) throw error;
+  return data as Post;
+}
+
+async function deletePost(id: string) {
+  const { error } = await supabase.from('posts').delete().eq('id', id);
+  if (error) throw error;
+}
+
+async function uploadMedia(file: File, folder: string) {
+  const extension = file.name.split('.').pop();
+  const fallbackId = Math.random().toString(36).slice(2, 10);
+  const fileName = (typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : fallbackId) +
+    (extension ? `.${extension}` : '');
+  const path = `${folder}/${fileName}`;
+  const { data, error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { upsert: false });
+  if (error) throw error;
+  const { data: publicData, error: publicError } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(data.path);
+  if (publicError) throw publicError;
+  return publicData.publicUrl;
+}
+
+function computeStats(posts: Post[]) {
+  const totalReads = posts.reduce((acc, post) => acc + (post.read_count ?? 0), 0);
+  const statuses: Record<PostStatus, number> = { draft: 0, in_review: 0, published: 0 };
+  posts.forEach((post) => {
+    statuses[post.status] += 1;
+  });
+  const publishedThisMonth = posts.filter((post) => {
+    if (post.status !== 'published' || !post.published_at) return false;
+    const date = new Date(post.published_at);
+    const now = new Date();
+    return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+  }).length;
+  const topRead = [...posts]
+    .sort((a, b) => (b.read_count ?? 0) - (a.read_count ?? 0))
+    .slice(0, 3)
+    .map((post) => ({ title: post.title, read_count: post.read_count }));
+
+  return { totalReads, statuses, publishedThisMonth, topRead };
 }
 
 function AdminAppInner() {
   const queryClient = useQueryClient();
   const session = useSession();
+  const [activeFilter, setActiveFilter] = useState<PostStatus | 'all'>('all');
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const { data: posts, isLoading, isError, error } = useQuery<Post[]>({
+  const { data: posts = [], isLoading, isError, error } = useQuery<Post[]>({
     queryKey: ['posts'],
     queryFn: fetchPosts,
     enabled: Boolean(session)
   });
 
-  const handleLogin = async () => {
-    await supabase.auth.signInWithOAuth({ provider: 'google' });
+  const stats = useMemo(() => computeStats(posts), [posts]);
+
+  const createMutation = useMutation({
+    mutationFn: createPost,
+    onSuccess: () => {
+      setFeedback({ type: 'success', message: 'Article créé avec succès.' });
+      setIsCreating(false);
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (mutationError: unknown) => {
+      setFeedback({ type: 'error', message: (mutationError as Error).message });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: Partial<Post> }) => updatePost(id, values),
+    onSuccess: () => {
+      setFeedback({ type: 'success', message: 'Article mis à jour.' });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (mutationError: unknown) => {
+      setFeedback({ type: 'error', message: (mutationError as Error).message });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deletePost,
+    onSuccess: () => {
+      setFeedback({ type: 'success', message: 'Article supprimé.' });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      setSelectedPost(null);
+    },
+    onError: (mutationError: unknown) => {
+      setFeedback({ type: 'error', message: (mutationError as Error).message });
+    }
+  });
+
+  const filteredPosts = useMemo(() => {
+    if (activeFilter === 'all') return posts;
+    return posts.filter((post) => post.status === activeFilter);
+  }, [activeFilter, posts]);
+
+  const handleCreate = async (values: PostFormValues) => {
+    await createMutation.mutateAsync(values);
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    queryClient.clear();
+  const handleUpdate = async (values: PostFormValues) => {
+    if (!selectedPost) return;
+    await updateMutation.mutateAsync({
+      id: selectedPost.id,
+      values: {
+        title: values.title,
+        slug: values.slug,
+        description: values.description,
+        content: values.content,
+        status: values.status,
+        cover_image: values.cover_image,
+        gallery_images: values.gallery_images,
+        video_url: values.video_url,
+        published_at: values.status === 'published' ? values.published_at ?? new Date().toISOString() : null
+      }
+    });
   };
+
+  const handleStatusChange = async (post: Post, status: PostStatus) => {
+    await updateMutation.mutateAsync({
+      id: post.id,
+      values: {
+        status,
+        published_at: status === 'published' ? post.published_at ?? new Date().toISOString() : null
+      }
+    });
+  };
+
+  const handleDelete = async (post: Post) => {
+    if (!confirm(`Supprimer définitivement "${post.title}" ?`)) return;
+    await deleteMutation.mutateAsync(post.id);
+  };
+
+  const handleUploadCover = useCallback((file: File) => uploadMedia(file, 'covers'), []);
+  const handleUploadGallery = useCallback(
+    (files: FileList) => Promise.all(Array.from(files).map((file) => uploadMedia(file, 'gallery'))),
+    []
+  );
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  const displayedFormValues: Partial<PostFormValues> | undefined = isCreating
+    ? undefined
+    : selectedPost
+    ? {
+        title: selectedPost.title,
+        slug: selectedPost.slug,
+        description: selectedPost.description,
+        content: selectedPost.content,
+        status: selectedPost.status,
+        cover_image: selectedPost.cover_image,
+        gallery_images: selectedPost.gallery_images,
+        video_url: selectedPost.video_url,
+        published_at: selectedPost.published_at
+      }
+    : undefined;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       {!session ? (
         <div className="space-y-4 text-center">
           <h2 className="text-2xl font-heading text-white">Connexion requise</h2>
           <p className="text-sm text-slate-300">
-            Connectez-vous avec votre compte d&apos;agence pour gérer les articles en base Supabase.
+            Connectez-vous avec votre compte d'agence pour gérer les articles en base Supabase.
           </p>
-          <button onClick={handleLogin} className="inline-flex items-center justify-center rounded-full bg-indigoGlow px-6 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-indigo-500">
+          <button
+            onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
+            className="inline-flex items-center justify-center rounded-full bg-indigoGlow px-6 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-indigo-500"
+          >
             Se connecter avec Google
           </button>
         </div>
       ) : (
         <>
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 p-6">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-sm text-slate-300">Connecté en tant que</p>
               <p className="text-lg font-semibold text-white">{session.user.email}</p>
             </div>
-            <button onClick={handleLogout} className="rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-white transition hover:bg-white/10">
-              Déconnexion
-            </button>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  setIsCreating(true);
+                  setSelectedPost(null);
+                  setFeedback(null);
+                }}
+                className="rounded-full bg-cyanAura/20 px-4 py-2 text-xs font-semibold text-cyanAura transition hover:bg-cyanAura/30"
+              >
+                Nouvel article
+              </button>
+              <button
+                onClick={() => supabase.auth.signOut()}
+                className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+              >
+                Déconnexion
+              </button>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-heading text-white">Articles</h2>
-            {isLoading && <p className="mt-3 text-sm text-slate-300">Chargement des articles...</p>}
-            {isError && <p className="mt-3 text-sm text-red-400">{(error as Error).message}</p>}
-            {posts && posts.length === 0 && <p className="mt-3 text-sm text-slate-400">Aucun article pour le moment.</p>}
-            <div className="mt-6 space-y-4">
-              {posts?.map((post) => (
-                <div key={post.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-midnight/40 p-5 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-cyanAura">{post.status}</p>
-                    <h3 className="text-lg font-semibold text-white">{post.title}</h3>
-                    <p className="text-sm text-slate-300">{post.description}</p>
+
+          {feedback && (
+            <div
+              className={`rounded-2xl border px-4 py-3 text-sm ${
+                feedback.type === 'success'
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
+                  : 'border-red-500/40 bg-red-500/10 text-red-200'
+              }`}
+            >
+              {feedback.message}
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Lectures cumulées</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{stats.totalReads}</p>
+              <p className="mt-1 text-xs text-slate-400">Somme des lectures reportées par Supabase</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Articles ce mois-ci</p>
+              <p className="mt-3 text-3xl font-semibold text-white">{stats.publishedThisMonth}</p>
+              <p className="mt-1 text-xs text-slate-400">Publications confirmées sur les 30 derniers jours</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Répartition</p>
+              <div className="mt-3 space-y-2 text-sm text-white">
+                {Object.entries(stats.statuses).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span>{statusLabels[key as PostStatus]}</span>
+                    <span className="text-slate-300">{value}</span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <a
-                      className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-                      href={`/blog/${post.slug}`}
-                    >
-                      Voir
-                    </a>
-                    <button className="rounded-full bg-indigoGlow px-4 py-2 text-xs font-semibold text-white shadow-card transition hover:bg-indigo-500">
-                      Modifier
-                    </button>
-                    <button className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-red-300 transition hover:bg-red-500/10">
-                      Supprimer
-                    </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {filterOptions.map((filter) => (
+                  <button
+                    key={filter.value}
+                    onClick={() => setActiveFilter(filter.value)}
+                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                      activeFilter === filter.value
+                        ? 'bg-indigoGlow text-white shadow-card'
+                        : 'border border-white/10 text-slate-200 hover:bg-white/10'
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-4">
+                {isLoading && <p className="text-sm text-slate-300">Chargement des articles...</p>}
+                {isError && <p className="text-sm text-red-400">{(error as Error).message}</p>}
+                {!isLoading && filteredPosts.length === 0 && (
+                  <p className="text-sm text-slate-400">Aucun article pour cette sélection.</p>
+                )}
+                {filteredPosts.map((post) => (
+                  <div key={post.id} className="rounded-2xl border border-white/10 bg-midnight/60 p-5 shadow-card">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
+                      <div className="space-y-2">
+                        {statusBadge(post.status)}
+                        <h3 className="text-lg font-semibold text-white">{post.title}</h3>
+                        <p className="text-sm text-slate-300">{post.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                          <span>Slug: {post.slug}</span>
+                          <span>Lectures: {post.read_count ?? 0}</span>
+                          {post.published_at && <span>Publié le {new Date(post.published_at).toLocaleDateString()}</span>}
+                        </div>
+                      </div>
+                      {post.cover_image && (
+                        <img src={post.cover_image} alt="Couverture" className="h-24 w-40 rounded-xl object-cover" />
+                      )}
+                    </div>
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setSelectedPost(post);
+                          setIsCreating(false);
+                          setFeedback(null);
+                        }}
+                        className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(post, 'published')}
+                        className="rounded-full bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/30"
+                      >
+                        Publier
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(post, 'draft')}
+                        className="rounded-full bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/20"
+                      >
+                        Dépublier
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(post, 'in_review')}
+                        className="rounded-full bg-cyanAura/10 px-4 py-2 text-xs font-semibold text-cyanAura transition hover:bg-cyanAura/20"
+                      >
+                        Marquer en revue
+                      </button>
+                      <button
+                        onClick={() => handleDelete(post)}
+                        className="rounded-full bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
+                      >
+                        Supprimer
+                      </button>
+                      <a
+                        className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                        href={`/blog/${post.slug}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Voir l'article
+                      </a>
+                    </div>
                   </div>
+                ))}
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Top lectures</p>
+                <ul className="mt-3 space-y-2 text-sm text-white">
+                  {stats.topRead.map((entry) => (
+                    <li key={entry.title} className="flex items-center justify-between">
+                      <span>{entry.title}</span>
+                      <span className="text-slate-300">{entry.read_count}</span>
+                    </li>
+                  ))}
+                  {stats.topRead.length === 0 && <li className="text-xs text-slate-400">Pas encore de statistiques.</li>}
+                </ul>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+              {isCreating || selectedPost ? (
+                <PostForm
+                  key={selectedPost?.id ?? (isCreating ? 'create' : 'empty')}
+                  initialValue={displayedFormValues}
+                  onSubmit={isCreating ? handleCreate : handleUpdate}
+                  onCancel={() => {
+                    setIsCreating(false);
+                    setSelectedPost(null);
+                  }}
+                  isSaving={isSaving}
+                  onUploadCover={handleUploadCover}
+                  onUploadGallery={handleUploadGallery}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 text-center text-sm text-slate-300">
+                  <p className="text-base font-semibold text-white">Sélectionnez un article</p>
+                  <p>
+                    Sélectionnez un article pour l'éditer ou cliquez sur "Nouvel article" pour en créer un.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setIsCreating(true);
+                      setSelectedPost(null);
+                    }}
+                    className="rounded-full bg-indigoGlow px-4 py-2 text-xs font-semibold text-white shadow-card transition hover:bg-indigo-500"
+                  >
+                    Commencer
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </>
@@ -118,7 +480,6 @@ function AdminAppInner() {
     </div>
   );
 }
-
 
 export default function AdminApp() {
   return (
