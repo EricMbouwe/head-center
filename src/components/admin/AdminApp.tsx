@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import QueryProvider from '../providers/QueryProvider';
+import { NotificationProvider, useNotifications } from '../providers/NotificationProvider';
 import PostForm, { type PostFormValues, type PostStatus } from './PostForm';
 
 type Post = {
@@ -150,7 +151,7 @@ function AdminAppInner() {
   const [activeFilter, setActiveFilter] = useState<PostStatus | 'all'>('all');
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const notifications = useNotifications();
 
   const { data: posts = [], isLoading, isError, error } = useQuery<Post[]>({
     queryKey: ['posts'],
@@ -158,40 +159,46 @@ function AdminAppInner() {
     enabled: Boolean(session)
   });
 
+  useEffect(() => {
+    if (isError && error) {
+      notifications.error((error as Error).message);
+    }
+  }, [isError, error, notifications]);
+
   const stats = useMemo(() => computeStats(posts), [posts]);
 
   const createMutation = useMutation({
     mutationFn: createPost,
     onSuccess: () => {
-      setFeedback({ type: 'success', message: 'Article créé avec succès.' });
+      notifications.success('Article créé avec succès.');
       setIsCreating(false);
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
     onError: (mutationError: unknown) => {
-      setFeedback({ type: 'error', message: (mutationError as Error).message });
+      notifications.error((mutationError as Error).message);
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, values }: { id: string; values: Partial<Post> }) => updatePost(id, values),
     onSuccess: () => {
-      setFeedback({ type: 'success', message: 'Article mis à jour.' });
+      notifications.success('Article mis à jour.');
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
     onError: (mutationError: unknown) => {
-      setFeedback({ type: 'error', message: (mutationError as Error).message });
+      notifications.error((mutationError as Error).message);
     }
   });
 
   const deleteMutation = useMutation({
     mutationFn: deletePost,
     onSuccess: () => {
-      setFeedback({ type: 'success', message: 'Article supprimé.' });
+      notifications.success('Article supprimé.');
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       setSelectedPost(null);
     },
     onError: (mutationError: unknown) => {
-      setFeedback({ type: 'error', message: (mutationError as Error).message });
+      notifications.error((mutationError as Error).message);
     }
   });
 
@@ -288,7 +295,6 @@ function AdminAppInner() {
                 onClick={() => {
                   setIsCreating(true);
                   setSelectedPost(null);
-                  setFeedback(null);
                 }}
                 className="rounded-full bg-cyanAura/20 px-4 py-2 text-xs font-semibold text-cyanAura transition hover:bg-cyanAura/30"
               >
@@ -302,18 +308,6 @@ function AdminAppInner() {
               </button>
             </div>
           </div>
-
-          {feedback && (
-            <div
-              className={`rounded-2xl border px-4 py-3 text-sm ${
-                feedback.type === 'success'
-                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-200'
-                  : 'border-red-500/40 bg-red-500/10 text-red-200'
-              }`}
-            >
-              {feedback.message}
-            </div>
-          )}
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -385,7 +379,6 @@ function AdminAppInner() {
                         onClick={() => {
                           setSelectedPost(post);
                           setIsCreating(false);
-                          setFeedback(null);
                         }}
                         className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
                       >
@@ -484,7 +477,9 @@ function AdminAppInner() {
 export default function AdminApp() {
   return (
     <QueryProvider>
-      <AdminAppInner />
+      <NotificationProvider>
+        <AdminAppInner />
+      </NotificationProvider>
     </QueryProvider>
   );
 }

@@ -1,5 +1,6 @@
 import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import { useNotifications } from '../providers/NotificationProvider';
 
 export type PostStatus = 'draft' | 'published' | 'in_review';
 
@@ -68,6 +69,7 @@ export default function PostForm({ initialValue, onSubmit, onCancel, isSaving, o
   const [values, setValues] = useState<PostFormValues>({ ...defaultValues, ...initialValue });
   const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isUploadingGallery, setIsUploadingGallery] = useState(false);
+  const notifications = useNotifications();
 
   useEffect(() => {
     setValues({ ...defaultValues, ...initialValue });
@@ -93,8 +95,14 @@ export default function PostForm({ initialValue, onSubmit, onCancel, isSaving, o
     const file = event.target.files[0];
     setIsUploadingCover(true);
     try {
-      const url = await onUploadCover(file);
+      const url = await notifications.promise(onUploadCover(file), {
+        loading: 'Téléversement de la couverture...',
+        success: 'Image de couverture ajoutée.',
+        error: (err) => (err instanceof Error ? err.message : "Échec du téléversement de la couverture.")
+      });
       setValues((prev) => ({ ...prev, cover_image: url }));
+    } catch {
+      // handled by toast promise
     } finally {
       setIsUploadingCover(false);
       event.target.value = '';
@@ -105,8 +113,14 @@ export default function PostForm({ initialValue, onSubmit, onCancel, isSaving, o
     if (!event.target.files?.length) return;
     setIsUploadingGallery(true);
     try {
-      const urls = await onUploadGallery(event.target.files);
+      const urls = await notifications.promise(onUploadGallery(event.target.files), {
+        loading: 'Ajout des images en galerie...',
+        success: 'Images ajoutées à la galerie.',
+        error: (err) => (err instanceof Error ? err.message : 'Échec de l’envoi des images de galerie.')
+      });
       setValues((prev) => ({ ...prev, gallery_images: [...(prev.gallery_images ?? []), ...urls] }));
+    } catch {
+      // handled by toast promise
     } finally {
       setIsUploadingGallery(false);
       event.target.value = '';

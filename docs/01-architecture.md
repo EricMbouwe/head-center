@@ -10,10 +10,14 @@
 ├── src
 │   ├── components
 │   │   ├── Hero.tsx
+│   │   ├── providers
+│   │   │   ├── NotificationProvider.tsx
+│   │   │   └── QueryProvider.tsx
 │   │   ├── blog
 │   │   │   └── BlogView.tsx
 │   │   └── admin
-│   │       └── AdminApp.tsx
+│   │       ├── AdminApp.tsx
+│   │       └── PostForm.tsx
 │   ├── layouts
 │   │   └── BaseLayout.astro
 │   ├── pages
@@ -43,6 +47,8 @@
 ## Gestion d'état côté client
 - **Zustand** : magasin léger `useBlogStore` pour centraliser la recherche, les filtres par catégorie/tag et préparer les futures
   interactions multi-pages sans basculer vers un framework plus lourd.
+- **Notifications globales** : contexte `NotificationProvider` adossé à `react-hot-toast` pour propager des toasts succès/erreur/
+  info cohérents sur toutes les îles React (admin, formulaires futurs) sans répéter la logique d'affichage.
 
 ## Sécurité
 - Auth Supabase + RLS (Row-Level Security).
