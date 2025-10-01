@@ -1,0 +1,13 @@
+---
+import { cardClasses, type CardStyleOptions } from './card';
+
+interface Props extends CardStyleOptions {
+  class?: string;
+}
+
+const { class: className, ...rest } = Astro.props as Props & Record<string, unknown>;
+const { padding, interactive, ...attrs } = rest;
+---
+<div class={cardClasses({ padding, interactive, className })} {...attrs}>
+  <slot />
+</div>

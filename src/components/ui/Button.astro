@@ -1,0 +1,31 @@
+---
+import { buttonClasses, type ButtonStyleOptions } from './button';
+
+interface Props extends ButtonStyleOptions {
+  href?: string;
+  type?: string;
+  ariaLabel?: string;
+  class?: string;
+}
+
+const { href, ariaLabel, class: className, ...rest } = Astro.props as Props & Record<string, unknown>;
+const { variant, size, fullWidth, ...attrs } = rest;
+---
+{href ? (
+  <a
+    class={buttonClasses({ variant, size, fullWidth, className })}
+    aria-label={ariaLabel}
+    href={href}
+    {...attrs}
+  >
+    <slot />
+  </a>
+) : (
+  <button
+    class={buttonClasses({ variant, size, fullWidth, className })}
+    aria-label={ariaLabel}
+    {...attrs}
+  >
+    <slot />
+  </button>
+)}

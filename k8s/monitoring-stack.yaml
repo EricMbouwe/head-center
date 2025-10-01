@@ -1,0 +1,57 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: kube-prometheus-stack
+  namespace: observability
+spec:
+  chart: kube-prometheus-stack
+  repo: https://prometheus-community.github.io/helm-charts
+  targetNamespace: observability
+  version: 58.3.2
+  valuesContent: |
+    grafana:
+      adminPassword: ${GRAFANA_ADMIN_PASSWORD}
+      service:
+        type: LoadBalancer
+    prometheus:
+      service:
+        type: LoadBalancer
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: elasticsearch
+  namespace: observability
+spec:
+  chart: elasticsearch
+  repo: https://helm.elastic.co
+  targetNamespace: observability
+  version: 8.5.1
+  valuesContent: |
+    replicas: 1
+    minimumMasterNodes: 1
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: filebeat
+  namespace: observability
+spec:
+  chart: filebeat
+  repo: https://helm.elastic.co
+  targetNamespace: observability
+  version: 8.5.1
+  valuesContent: |
+    filebeatConfig:
+      filebeat.yml: |
+        filebeat.autodiscover:
+          providers:
+            - type: kubernetes
+              hints.enabled: true
+        output.elasticsearch:
+          hosts: ['http://elasticsearch-observability:9200']

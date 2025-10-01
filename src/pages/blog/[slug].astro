@@ -1,0 +1,36 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getCollection, getEntryBySlug } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog');
+  return posts.filter((post) => !post.data.draft).map((post) => ({ params: { slug: post.slug } }));
+}
+
+const { slug } = Astro.params;
+const post = await getEntryBySlug('blog', slug!);
+if (!post) {
+  throw new Error(`Article introuvable pour le slug ${slug}`);
+}
+const { Content } = await post.render();
+const publishedDate = new Date(post.data.publishedAt).toLocaleDateString('fr-FR', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric'
+});
+---
+
+<BaseLayout title={`${post.data.title} — Head Center`} description={post.data.description}>
+  <article class="mx-auto max-w-3xl px-6 py-24 sm:px-12">
+    <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-indigoGlow">
+      <span class="rounded-full bg-indigoGlow/20 px-3 py-1">{post.data.category}</span>
+      <span class="rounded-full bg-white/10 px-3 py-1 text-white">{publishedDate}</span>
+      <span class="rounded-full bg-white/10 px-3 py-1 text-white">{post.data.author}</span>
+    </div>
+    <h1 class="mt-6 text-4xl font-heading text-white">{post.data.title}</h1>
+    <p class="mt-4 text-base text-slate-300">{post.data.description}</p>
+    <div class="mt-8 prose prose-invert prose-slate max-w-none">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

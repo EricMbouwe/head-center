@@ -1,0 +1,12 @@
+node_modules
+.dist
+dist
+.astro
+.env
+coverage
+playwright-report
+.terraform
+terraform/*.tfvars
+!terraform/terraform.tfvars.example
+.DS_Store
+npm-debug.log*

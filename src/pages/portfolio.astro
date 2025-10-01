@@ -1,0 +1,58 @@
+---
+import BaseLayout from '@layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import Card from '@components/ui/Card.astro';
+import Badge from '@components/ui/Badge.astro';
+import Button from '@components/ui/Button.astro';
+
+const projects = (await getCollection('portfolio', ({ data }) => !data.draft)).sort((a, b) => {
+  if (a.data.featured === b.data.featured) {
+    return b.data.publishedAt.getTime() - a.data.publishedAt.getTime();
+  }
+
+  return a.data.featured ? -1 : 1;
+});
+---
+
+<BaseLayout title="Head Center — Portfolio" description="Découvrez nos études de cas et projets marquants.">
+  <section class="mx-auto max-w-6xl px-6 py-24 sm:px-12">
+    <div class="mb-12 text-center">
+      <p class="text-sm font-semibold uppercase tracking-[0.3em] text-cyanAura">Portfolio</p>
+      <h1 class="mt-4 text-4xl font-heading text-white">Une sélection de projets impactants</h1>
+      <p class="mt-4 text-base text-slate-300">
+        Chaque collaboration est guidée par une obsession : délivrer rapidement un produit performant et mesurable.
+      </p>
+    </div>
+    <div class="space-y-8">
+      {projects.map((project) => (
+        <Card
+          interactive
+          padding="lg"
+          class={`shadow-card ${project.data.featured ? 'ring-2 ring-cyanAura/60' : ''}`}
+        >
+          <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
+            <Badge variant="accent">{project.data.industry}</Badge>
+            {project.data.techStack.map((tech) => (
+              <Badge variant="outline" key={tech}>{tech}</Badge>
+            ))}
+          </div>
+          <h2 class="mt-5 text-3xl font-heading text-white">{project.data.client}</h2>
+          <p class="mt-4 text-base text-slate-300">{project.data.excerpt}</p>
+          <div class="mt-5 flex flex-wrap gap-3 text-xs text-slate-300">
+            {project.data.services.map((service) => (
+              <Badge variant="outline" key={service}>{service}</Badge>
+            ))}
+          </div>
+          <div class="mt-6 flex flex-wrap gap-4 text-sm">
+            <Button href={project.data.documentationUrl} target="_blank" rel="noreferrer" variant="ghost" size="sm">
+              Documentation
+            </Button>
+            <Button href={project.data.demoUrl} target="_blank" rel="noreferrer" variant="ghost" size="sm">
+              Env. de test
+            </Button>
+          </div>
+        </Card>
+      ))}
+    </div>
+  </section>
+</BaseLayout>
