@@ -1,6 +1,9 @@
 ---
 import BaseLayout from '@layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import Card from '@components/ui/Card.astro';
+import Badge from '@components/ui/Badge.astro';
+import Button from '@components/ui/Button.astro';
 
 const projects = (await getCollection('portfolio', ({ data }) => !data.draft)).sort((a, b) => {
   if (a.data.featured === b.data.featured) {
@@ -22,25 +25,33 @@ const projects = (await getCollection('portfolio', ({ data }) => !data.draft)).s
     </div>
     <div class="space-y-8">
       {projects.map((project) => (
-        <article class={`rounded-3xl border border-white/5 bg-white/5 p-10 shadow-card ${project.data.featured ? 'ring-2 ring-cyanAura/60' : ''}`}>
+        <Card
+          interactive
+          padding="lg"
+          class={`shadow-card ${project.data.featured ? 'ring-2 ring-cyanAura/60' : ''}`}
+        >
           <div class="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
-            <span class="rounded-full bg-indigoGlow/20 px-3 py-1">{project.data.industry}</span>
+            <Badge variant="accent">{project.data.industry}</Badge>
             {project.data.techStack.map((tech) => (
-              <span class="rounded-full bg-white/10 px-3 py-1 text-white">{tech}</span>
+              <Badge variant="outline" key={tech}>{tech}</Badge>
             ))}
           </div>
           <h2 class="mt-5 text-3xl font-heading text-white">{project.data.client}</h2>
           <p class="mt-4 text-base text-slate-300">{project.data.excerpt}</p>
           <div class="mt-5 flex flex-wrap gap-3 text-xs text-slate-300">
             {project.data.services.map((service) => (
-              <span class="rounded-full border border-white/10 px-3 py-1">{service}</span>
+              <Badge variant="outline" key={service}>{service}</Badge>
             ))}
           </div>
           <div class="mt-6 flex flex-wrap gap-4 text-sm">
-            <a class="text-indigoGlow hover:text-cyanAura" href={project.data.documentationUrl} target="_blank" rel="noreferrer">Documentation</a>
-            <a class="text-indigoGlow hover:text-cyanAura" href={project.data.demoUrl} target="_blank" rel="noreferrer">Env. de test</a>
+            <Button href={project.data.documentationUrl} target="_blank" rel="noreferrer" variant="ghost" size="sm">
+              Documentation
+            </Button>
+            <Button href={project.data.demoUrl} target="_blank" rel="noreferrer" variant="ghost" size="sm">
+              Env. de test
+            </Button>
           </div>
-        </article>
+        </Card>
       ))}
     </div>
   </section>

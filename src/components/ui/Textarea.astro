@@ -1,0 +1,13 @@
+---
+import { inputClasses } from './input';
+
+interface Props {
+  class?: string;
+  hasError?: boolean;
+}
+
+const { class: className, hasError, ...attrs } = Astro.props as Props & Record<string, unknown>;
+---
+<textarea class={inputClasses({ className, hasError, isTextarea: true })} {...attrs}>
+  <slot />
+</textarea>

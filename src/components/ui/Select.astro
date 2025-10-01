@@ -1,0 +1,12 @@
+---
+import { selectClasses, type SelectStyleOptions } from './select';
+
+interface Props extends SelectStyleOptions {
+  class?: string;
+}
+
+const { class: className, hasError, ...attrs } = Astro.props as Props & Record<string, unknown>;
+---
+<select class={selectClasses({ className, hasError })} {...attrs}>
+  <slot />
+</select>

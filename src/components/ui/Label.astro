@@ -1,0 +1,13 @@
+---
+import { labelClasses, type LabelStyleOptions } from './label';
+
+interface Props extends LabelStyleOptions {
+  class?: string;
+  for?: string;
+}
+
+const { class: className, subtle, ...attrs } = Astro.props as Props & Record<string, unknown>;
+---
+<label class={labelClasses({ className, subtle })} {...attrs}>
+  <slot />
+</label>

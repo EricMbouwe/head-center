@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { motion } from 'framer-motion';
-import clsx from 'clsx';
+import { cn } from '@lib/cn';
+import { ButtonLink } from '@components/ui/Button';
 
 interface HeroProps {
   ctaHref: string;
@@ -24,7 +25,7 @@ export const Hero: FC<HeroProps> = ({ ctaHref }) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className={clsx('mt-8 text-4xl font-heading font-semibold text-white sm:text-6xl lg:text-7xl')}
+          className={cn('mt-8 text-4xl font-heading font-semibold text-white sm:text-6xl lg:text-7xl')}
         >
           Votre site professionnel en <span className="text-indigoGlow">5 jours</span>
         </motion.h1>
@@ -42,18 +43,12 @@ export const Hero: FC<HeroProps> = ({ ctaHref }) => {
           transition={{ duration: 1, delay: 0.4 }}
           className="mt-12 flex flex-wrap items-center justify-center gap-4"
         >
-          <a
-            className="inline-flex items-center justify-center rounded-full bg-indigoGlow px-8 py-3 text-base font-semibold text-white shadow-card transition hover:bg-indigo-500"
-            href={ctaHref}
-          >
+          <ButtonLink href={ctaHref} variant="primary">
             Commander mon site maintenant
-          </a>
-          <a
-            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-white/5 px-8 py-3 text-base font-semibold text-white transition hover:bg-white/10"
-            href="#portfolio"
-          >
+          </ButtonLink>
+          <ButtonLink href="#portfolio" variant="secondary">
             Voir nos réalisations
-          </a>
+          </ButtonLink>
         </motion.div>
       </div>
     </section>

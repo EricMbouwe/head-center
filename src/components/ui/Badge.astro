@@ -1,0 +1,13 @@
+---
+import { badgeClasses, type BadgeStyleOptions } from './badge';
+
+interface Props extends BadgeStyleOptions {
+  class?: string;
+}
+
+const { class: className, ...rest } = Astro.props as Props & Record<string, unknown>;
+const { variant, ...attrs } = rest;
+---
+<span class={badgeClasses({ variant, className })} {...attrs}>
+  <slot />
+</span>

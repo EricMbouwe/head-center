@@ -1,5 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import { clsx } from 'clsx';
+import Card from '@components/ui/Card';
+import Badge from '@components/ui/Badge';
+import Button from '@components/ui/Button';
+import Input from '@components/ui/Input';
 import type { BlogPost } from '@store/blogStore';
 import { blogSelectors, useBlogStore } from '@store/blogStore';
 
@@ -42,7 +45,7 @@ const BlogView = ({ posts }: BlogViewProps) => {
 
   return (
     <div className="space-y-12">
-      <div className="grid gap-6 rounded-3xl border border-white/5 bg-white/5 p-8 shadow-card md:grid-cols-[1fr,2fr] md:items-center">
+      <Card className="grid gap-6 md:grid-cols-[1fr,2fr] md:items-center">
         <div>
           <h2 className="text-2xl font-heading text-white">Affinez votre lecture</h2>
           <p className="mt-2 text-sm text-slate-300">
@@ -50,75 +53,66 @@ const BlogView = ({ posts }: BlogViewProps) => {
           </p>
         </div>
         <div className="grid gap-4">
-          <label className="flex flex-col text-sm text-slate-300">
-            Mot-clé
-            <input
+          <label className="flex flex-col gap-2 text-sm text-slate-300">
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Mot-clé</span>
+            <Input
               value={searchTerm}
               onChange={(event) => setSearchTerm(event.target.value)}
               placeholder="Rechercher un sujet, un tag, une techno..."
-              className="mt-1 rounded-full border border-white/10 bg-slate-900/60 px-4 py-2 text-white outline-none transition focus:border-cyanAura focus:ring-2 focus:ring-cyanAura/40"
               type="search"
+              className="rounded-full"
             />
           </label>
           <div className="flex flex-wrap gap-3 text-sm">
             {availableCategories.map((category) => (
-              <button
+              <Button
                 key={category}
                 type="button"
+                size="sm"
+                variant={activeCategory === category ? 'subtle' : 'ghost'}
                 onClick={() => setActiveCategory(activeCategory === category ? null : category)}
-                className={clsx(
-                  'rounded-full border px-4 py-1 transition',
-                  activeCategory === category
-                    ? 'border-cyanAura bg-cyanAura/20 text-cyanAura'
-                    : 'border-white/10 bg-white/5 text-slate-200 hover:border-cyanAura/40 hover:text-white'
-                )}
               >
                 {category}
-              </button>
+              </Button>
             ))}
           </div>
           {availableTags.length > 0 ? (
             <div className="flex flex-wrap gap-2 text-xs">
               {availableTags.map((tag) => (
-                <button
+                <Button
                   key={tag}
                   type="button"
+                  size="sm"
+                  variant={activeTag === tag ? 'primary' : 'ghost'}
                   onClick={() => setActiveTag(activeTag === tag ? null : tag)}
-                  className={clsx(
-                    'rounded-full border px-3 py-1 uppercase tracking-wide transition',
-                    activeTag === tag
-                      ? 'border-indigoGlow bg-indigoGlow/20 text-indigoGlow'
-                      : 'border-white/10 bg-white/5 text-slate-200 hover:border-indigoGlow/60 hover:text-white'
-                  )}
+                  className="uppercase tracking-wide"
                 >
                   #{tag}
-                </button>
+                </Button>
               ))}
             </div>
           ) : null}
           <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
-            >
+            <Button type="button" size="sm" variant="secondary" onClick={clearFilters}>
               Réinitialiser
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="grid gap-8">
         {filteredPosts.length === 0 ? (
-          <p className="rounded-3xl border border-white/5 bg-white/5 p-10 text-center text-slate-300">
+          <Card className="p-10 text-center text-slate-300">
             Aucun article ne correspond à votre recherche pour le moment.
-          </p>
+          </Card>
         ) : (
           filteredPosts.map((post) => (
-            <article key={post.slug} className="rounded-3xl border border-white/5 bg-white/5 p-10 shadow-card">
+            <Card key={post.slug} className="p-10">
               <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-indigoGlow">
-                <span className="rounded-full bg-indigoGlow/20 px-3 py-1">{post.category}</span>
-                <span className="rounded-full bg-white/10 px-3 py-1 text-white">{formatDate(post.publishedAt)}</span>
+                <Badge variant="accent">{post.category}</Badge>
+                <Badge variant="outline" className="text-white">
+                  {formatDate(post.publishedAt)}
+                </Badge>
               </div>
               <h2 className="mt-5 text-3xl font-heading text-white">
                 <a className="hover:text-cyanAura" href={`/blog/${post.slug}`}>
@@ -129,13 +123,13 @@ const BlogView = ({ posts }: BlogViewProps) => {
               {post.tags && post.tags.length > 0 ? (
                 <div className="mt-6 flex flex-wrap gap-2 text-xs text-slate-300">
                   {post.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-white/10 px-3 py-1">
+                    <Badge key={tag} variant="outline">
                       #{tag}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               ) : null}
-            </article>
+            </Card>
           ))
         )}
       </div>

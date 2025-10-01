@@ -1,0 +1,10 @@
+---
+import { inputClasses, type InputStyleOptions } from './input';
+
+interface Props extends Omit<InputStyleOptions, 'isTextarea'> {
+  class?: string;
+}
+
+const { class: className, hasError, ...attrs } = Astro.props as Props & Record<string, unknown>;
+---
+<input class={inputClasses({ className, hasError })} {...attrs} />

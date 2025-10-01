@@ -1,5 +1,11 @@
 import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
+import Button from '@components/ui/Button';
+import Card from '@components/ui/Card';
+import Input from '@components/ui/Input';
+import Textarea from '@components/ui/Textarea';
+import Select from '@components/ui/Select';
+import Label from '@components/ui/Label';
 import { useNotifications } from '../providers/NotificationProvider';
 
 export type PostStatus = 'draft' | 'published' | 'in_review';
@@ -140,93 +146,87 @@ export default function PostForm({ initialValue, onSubmit, onCancel, isSaving, o
     <form onSubmit={handleSubmit} className="flex h-full flex-col gap-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">{initialValue?.title ? "Modifier l'article" : 'Nouvel article'}</h3>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
-        >
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
           Fermer
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Titre</span>
-          <input
+          <Label htmlFor="post-title">Titre</Label>
+          <Input
+            id="post-title"
             required
             value={values.title}
             onChange={handleChange('title')}
-            className="w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
             placeholder="Titre accrocheur"
           />
         </label>
         <label className="flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">
-            <span>Slug</span>
-            <button type="button" onClick={handleGenerateSlug} className="text-[10px] font-semibold text-slate-200 hover:text-white">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="post-slug">Slug</Label>
+            <Button type="button" size="sm" variant="ghost" onClick={handleGenerateSlug}>
               Générer
-            </button>
+            </Button>
           </div>
-          <input
+          <Input
+            id="post-slug"
             required
             value={values.slug}
             onChange={handleChange('slug')}
-            className="w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
             placeholder="titre-accrocheur"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Description</span>
-        <textarea
+        <Label htmlFor="post-description">Description</Label>
+        <Textarea
+          id="post-description"
           required
           value={values.description}
           onChange={handleChange('description')}
-          className="min-h-[96px] w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
           placeholder="Résumé court et impactant"
+          className="min-h-[96px]"
         />
       </label>
 
       <label className="flex flex-col gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Contenu</span>
-        <textarea
+        <Label htmlFor="post-content">Contenu</Label>
+        <Textarea
+          id="post-content"
           required
           value={values.content}
           onChange={handleChange('content')}
-          className="min-h-[160px] w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
           placeholder="Markdown ou contenu riche"
+          className="min-h-[160px]"
         />
       </label>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <label className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Statut</span>
-          <select
-            value={values.status}
-            onChange={handleChange('status')}
-            className="w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
-          >
+          <Label htmlFor="post-status">Statut</Label>
+          <Select id="post-status" value={values.status} onChange={handleChange('status')}>
             {STATUS_OPTIONS.map((option) => (
               <option key={option.value} value={option.value} className="bg-midnight text-slate-900">
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label className="flex flex-col gap-2">
-          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Publication</span>
-          <input
+          <Label htmlFor="post-publication">Publication</Label>
+          <Input
+            id="post-publication"
             type="datetime-local"
             value={toInputDateTime(values.published_at)}
             onChange={handleChange('published_at')}
-            className="w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
           />
         </label>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-midnight/60 p-4">
+        <Card padding="md" className="space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">
             <span>Image de couverture</span>
             <span className="text-[10px] text-slate-400">1200x630 recommandé</span>
@@ -239,66 +239,55 @@ export default function PostForm({ initialValue, onSubmit, onCancel, isSaving, o
             ) : (
               <p className="text-xs text-slate-300">Aucune image sélectionnée pour l'instant.</p>
             )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleCoverUpload}
-              className="text-xs text-slate-200"
-            />
+            <Input type="file" accept="image/*" onChange={handleCoverUpload} />
             {isUploadingCover && <p className="text-xs text-cyanAura">Téléversement en cours...</p>}
           </div>
-        </div>
+        </Card>
 
-        <div className="space-y-3 rounded-2xl border border-white/10 bg-midnight/60 p-4">
+        <Card padding="md" className="space-y-3">
           <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">
             <span>Galerie d'images</span>
             <span className="text-[10px] text-slate-400">Jusqu'à 10 images</span>
           </div>
-          <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="text-xs text-slate-200" />
+          <Input type="file" accept="image/*" multiple onChange={handleGalleryUpload} />
           {isUploadingGallery && <p className="text-xs text-cyanAura">Téléversement en cours...</p>}
           <div className="grid grid-cols-2 gap-3">
             {galleryPreview.map((image) => (
               <div key={image} className="relative overflow-hidden rounded-xl border border-white/10">
                 <img src={image} alt="Galerie" className="h-20 w-full object-cover" />
-                <button
+                <Button
                   type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="absolute right-2 top-2 px-2 py-1 text-[10px]"
                   onClick={() => handleRemoveGalleryImage(image)}
-                  className="absolute right-2 top-2 rounded-full bg-black/50 px-2 py-1 text-[10px] font-semibold text-white"
                 >
                   Retirer
-                </button>
+                </Button>
               </div>
             ))}
             {galleryPreview.length === 0 && <p className="col-span-2 text-xs text-slate-300">Aucune image dans la galerie.</p>}
           </div>
-        </div>
+        </Card>
       </div>
 
       <label className="flex flex-col gap-2">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-cyanAura">Vidéo</span>
-        <input
+        <Label htmlFor="post-video">Vidéo</Label>
+        <Input
+          id="post-video"
           value={values.video_url ?? ''}
           onChange={(event) => setValues((prev) => ({ ...prev, video_url: event.target.value || null }))}
           placeholder="URL Vimeo, YouTube ou lecteur natif"
-          className="w-full rounded-xl border border-white/10 bg-midnight/60 px-4 py-3 text-sm text-white outline-none transition focus:border-cyanAura/70"
         />
       </label>
 
       <div className="mt-auto flex items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="rounded-full border border-white/10 px-5 py-2 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
-        >
+        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
           Annuler
-        </button>
-        <button
-          type="submit"
-          disabled={isSaving || isUploadingCover || isUploadingGallery}
-          className="rounded-full bg-indigoGlow px-5 py-2 text-xs font-semibold text-white shadow-card transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-        >
+        </Button>
+        <Button type="submit" size="sm" disabled={isSaving || isUploadingCover || isUploadingGallery}>
           {isSaving ? 'Enregistrement...' : 'Enregistrer'}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Card from '@components/ui/Card';
+import Badge from '@components/ui/Badge';
+import Button, { ButtonLink } from '@components/ui/Button';
 import QueryProvider from '../providers/QueryProvider';
 import { NotificationProvider, useNotifications } from '../providers/NotificationProvider';
 import PostForm, { type PostFormValues, type PostStatus } from './PostForm';
@@ -63,10 +66,10 @@ const statusLabels: Record<PostStatus, string> = {
   published: 'Publié'
 };
 
-const statusColors: Record<PostStatus, string> = {
-  draft: 'bg-slate-700/60 text-slate-200',
-  in_review: 'bg-amber-500/10 text-amber-300',
-  published: 'bg-emerald-500/10 text-emerald-300'
+const statusVariants: Record<PostStatus, 'outline' | 'warning' | 'success'> = {
+  draft: 'outline',
+  in_review: 'warning',
+  published: 'success'
 };
 
 const filterOptions: { value: PostStatus | 'all'; label: string }[] = [
@@ -77,11 +80,7 @@ const filterOptions: { value: PostStatus | 'all'; label: string }[] = [
 ];
 
 function statusBadge(status: PostStatus) {
-  return (
-    <span className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.2em] ${statusColors[status]}`}>
-      {statusLabels[status]}
-    </span>
-  );
+  return <Badge variant={statusVariants[status]}>{statusLabels[status]}</Badge>;
 }
 
 async function createPost(values: PostFormValues) {
@@ -271,18 +270,15 @@ function AdminAppInner() {
   return (
     <div className="flex flex-col gap-8">
       {!session ? (
-        <div className="space-y-4 text-center">
+        <Card padding="lg" className="space-y-4 text-center">
           <h2 className="text-2xl font-heading text-white">Connexion requise</h2>
           <p className="text-sm text-slate-300">
             Connectez-vous avec votre compte d'agence pour gérer les articles en base Supabase.
           </p>
-          <button
-            onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}
-            className="inline-flex items-center justify-center rounded-full bg-indigoGlow px-6 py-3 text-sm font-semibold text-white shadow-card transition hover:bg-indigo-500"
-          >
+          <Button onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}>
             Se connecter avec Google
-          </button>
-        </div>
+          </Button>
+        </Card>
       ) : (
         <>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -291,36 +287,34 @@ function AdminAppInner() {
               <p className="text-lg font-semibold text-white">{session.user.email}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <button
+              <Button
+                size="sm"
+                variant="subtle"
                 onClick={() => {
                   setIsCreating(true);
                   setSelectedPost(null);
                 }}
-                className="rounded-full bg-cyanAura/20 px-4 py-2 text-xs font-semibold text-cyanAura transition hover:bg-cyanAura/30"
               >
                 Nouvel article
-              </button>
-              <button
-                onClick={() => supabase.auth.signOut()}
-                className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
-              >
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => supabase.auth.signOut()}>
                 Déconnexion
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <Card padding="md">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Lectures cumulées</p>
               <p className="mt-3 text-3xl font-semibold text-white">{stats.totalReads}</p>
               <p className="mt-1 text-xs text-slate-400">Somme des lectures reportées par Supabase</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            </Card>
+            <Card padding="md">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Articles ce mois-ci</p>
               <p className="mt-3 text-3xl font-semibold text-white">{stats.publishedThisMonth}</p>
               <p className="mt-1 text-xs text-slate-400">Publications confirmées sur les 30 derniers jours</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            </Card>
+            <Card padding="md">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Répartition</p>
               <div className="mt-3 space-y-2 text-sm text-white">
                 {Object.entries(stats.statuses).map(([key, value]) => (
@@ -330,24 +324,21 @@ function AdminAppInner() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           </div>
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-[3fr_2fr]">
             <div className="flex flex-col gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 {filterOptions.map((filter) => (
-                  <button
+                  <Button
                     key={filter.value}
+                    size="sm"
+                    variant={activeFilter === filter.value ? 'primary' : 'ghost'}
                     onClick={() => setActiveFilter(filter.value)}
-                    className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                      activeFilter === filter.value
-                        ? 'bg-indigoGlow text-white shadow-card'
-                        : 'border border-white/10 text-slate-200 hover:bg-white/10'
-                    }`}
                   >
                     {filter.label}
-                  </button>
+                  </Button>
                 ))}
               </div>
 
@@ -358,7 +349,7 @@ function AdminAppInner() {
                   <p className="text-sm text-slate-400">Aucun article pour cette sélection.</p>
                 )}
                 {filteredPosts.map((post) => (
-                  <div key={post.id} className="rounded-2xl border border-white/10 bg-midnight/60 p-5 shadow-card">
+                  <Card key={post.id} padding="md" className="space-y-5">
                     <div className="flex flex-col gap-4 lg:flex-row lg:justify-between">
                       <div className="space-y-2">
                         {statusBadge(post.status)}
@@ -374,54 +365,44 @@ function AdminAppInner() {
                         <img src={post.cover_image} alt="Couverture" className="h-24 w-40 rounded-xl object-cover" />
                       )}
                     </div>
-                    <div className="mt-5 flex flex-wrap items-center gap-3">
-                      <button
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        size="sm"
+                        variant="outline"
                         onClick={() => {
                           setSelectedPost(post);
                           setIsCreating(false);
                         }}
-                        className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
                       >
                         Modifier
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(post, 'published')}
-                        className="rounded-full bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/30"
-                      >
+                      </Button>
+                      <Button size="sm" variant="success" onClick={() => handleStatusChange(post, 'published')}>
                         Publier
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(post, 'draft')}
-                        className="rounded-full bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/20"
-                      >
+                      </Button>
+                      <Button size="sm" variant="warning" onClick={() => handleStatusChange(post, 'draft')}>
                         Dépublier
-                      </button>
-                      <button
-                        onClick={() => handleStatusChange(post, 'in_review')}
-                        className="rounded-full bg-cyanAura/10 px-4 py-2 text-xs font-semibold text-cyanAura transition hover:bg-cyanAura/20"
-                      >
+                      </Button>
+                      <Button size="sm" variant="subtle" onClick={() => handleStatusChange(post, 'in_review')}>
                         Marquer en revue
-                      </button>
-                      <button
-                        onClick={() => handleDelete(post)}
-                        className="rounded-full bg-red-500/10 px-4 py-2 text-xs font-semibold text-red-200 transition hover:bg-red-500/20"
-                      >
+                      </Button>
+                      <Button size="sm" variant="danger" onClick={() => handleDelete(post)}>
                         Supprimer
-                      </button>
-                      <a
-                        className="rounded-full border border-white/10 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
+                      </Button>
+                      <ButtonLink
                         href={`/blog/${post.slug}`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        size="sm"
+                        variant="ghost"
                       >
                         Voir l'article
-                      </a>
+                      </ButtonLink>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+              <Card padding="md">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-300">Top lectures</p>
                 <ul className="mt-3 space-y-2 text-sm text-white">
                   {stats.topRead.map((entry) => (
@@ -432,10 +413,10 @@ function AdminAppInner() {
                   ))}
                   {stats.topRead.length === 0 && <li className="text-xs text-slate-400">Pas encore de statistiques.</li>}
                 </ul>
-              </div>
+              </Card>
             </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <Card padding="md">
               {isCreating || selectedPost ? (
                 <PostForm
                   key={selectedPost?.id ?? (isCreating ? 'create' : 'empty')}
@@ -455,18 +436,18 @@ function AdminAppInner() {
                   <p>
                     Sélectionnez un article pour l'éditer ou cliquez sur "Nouvel article" pour en créer un.
                   </p>
-                  <button
+                  <Button
+                    size="sm"
                     onClick={() => {
                       setIsCreating(true);
                       setSelectedPost(null);
                     }}
-                    className="rounded-full bg-indigoGlow px-4 py-2 text-xs font-semibold text-white shadow-card transition hover:bg-indigo-500"
                   >
                     Commencer
-                  </button>
+                  </Button>
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         </>
       )}
