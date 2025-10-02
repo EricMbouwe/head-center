@@ -1,8 +1,8 @@
 import { useEffect, useMemo } from 'react';
-import Card from '@components/ui/Card';
-import Badge from '@components/ui/Badge';
-import Button from '@components/ui/Button';
-import Input from '@components/ui/Input';
+import Card from '@components/ui/Card.tsx';
+import Badge from '@components/ui/Badge.tsx';
+import Button from '@components/ui/Button.tsx';
+import Input from '@components/ui/Input.tsx';
 import type { BlogPost } from '@store/blogStore';
 import { blogSelectors, useBlogStore } from '@store/blogStore';
 

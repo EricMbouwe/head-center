@@ -1,7 +1,7 @@
 import type { FC } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@lib/cn';
-import { ButtonLink } from '@components/ui/Button';
+import { ButtonLink } from '@components/ui/Button.tsx';
 
 interface HeroProps {
   ctaHref: string;

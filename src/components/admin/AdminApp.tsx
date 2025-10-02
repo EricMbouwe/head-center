@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import Card from '@components/ui/Card';
-import Badge from '@components/ui/Badge';
-import Button, { ButtonLink } from '@components/ui/Button';
+import Card from '@components/ui/Card.tsx';
+import Badge from '@components/ui/Badge.tsx';
+import Button, { ButtonLink } from '@components/ui/Button.tsx';
 import QueryProvider from '../providers/QueryProvider';
 import { NotificationProvider, useNotifications } from '../providers/NotificationProvider';
 import PostForm, { type PostFormValues, type PostStatus } from './PostForm';
@@ -119,8 +119,7 @@ async function uploadMedia(file: File, folder: string) {
   const path = `${folder}/${fileName}`;
   const { data, error } = await supabase.storage.from(MEDIA_BUCKET).upload(path, file, { upsert: false });
   if (error) throw error;
-  const { data: publicData, error: publicError } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(data.path);
-  if (publicError) throw publicError;
+  const { data: publicData } = supabase.storage.from(MEDIA_BUCKET).getPublicUrl(data.path);
   return publicData.publicUrl;
 }
 

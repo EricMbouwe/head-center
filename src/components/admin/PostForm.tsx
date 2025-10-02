@@ -1,11 +1,11 @@
 import type { ChangeEvent, FormEvent } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import Button from '@components/ui/Button';
-import Card from '@components/ui/Card';
-import Input from '@components/ui/Input';
-import Textarea from '@components/ui/Textarea';
-import Select from '@components/ui/Select';
-import Label from '@components/ui/Label';
+import Button from '@components/ui/Button.tsx';
+import Card from '@components/ui/Card.tsx';
+import Input from '@components/ui/Input.tsx';
+import Textarea from '@components/ui/Textarea.tsx';
+import Select from '@components/ui/Select.tsx';
+import Label from '@components/ui/Label.tsx';
 import { useNotifications } from '../providers/NotificationProvider';
 
 export type PostStatus = 'draft' | 'published' | 'in_review';
